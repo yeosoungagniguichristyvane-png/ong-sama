@@ -62,7 +62,7 @@ div h2{
 </head>
 <div class="section">
     <h2>Devenir Membre</h2>
-    <form id="ongForm">
+    <form id="formInscription">
         <input type="text" id="nom" placeholder="Votre Nom complet" required>
         <input type="email" id="email" placeholder="Votre adresse Email" required>
         <button type="submit" action="index(2).html">S'inscrire maintenant</button>
@@ -73,69 +73,69 @@ div h2{
 
 <footer>&copy; 2026 Projet ONG Solidaire - Tous droits réservés</footer>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cibler le formulaire d'inscription
-    const formInscription = document.querySelector('form');
+// On écoute la soumission du formulaire
+document.getElementById('formInscription').addEventListener('submit', async function(event) {
+    event.preventDefault(); // Empêche le rechargement de la page
 
-    if (!formInscription) {
-        console.error("Erreur : Aucun formulaire trouvé dans la page HTML.");
+    // 1. Récupération des valeurs des champs HTML
+    // (Vérifie bien que tes balises <input> ont les id="nom" et id="email")
+    const champNom = document.getElementById('nom');
+    const champEmail = document.getElementById('email');
+
+    if (!champNom || !champEmail) {
+        alert("Erreur technique : Les champs 'nom' ou 'email' sont introuvables dans le HTML.");
         return;
     }
 
-    // 2. Écouter l'événement de soumission du formulaire
-    formInscription.addEventListener('submit', async (e) => {
-        e.preventDefault(); // Empêche la page de se recharger
+    // 2. Préparation des données dans l'objet attendu par le Python (main.py)
+    const donneesFormulaire = {
+        nom: champNom.value.trim(),
+        email: champEmail.value.trim()
+    };
 
-        // 3. Récupérer proprement les valeurs des champs de ton formulaire
-        // Vérifie que les "id" (nom, email, etc.) correspondent bien à tes balises <input>
-        const nomInput = document.getElementById('nom');
-        const emailInput = document.getElementById('email');
+    // Vérification locale rapide avant d'envoyer
+    if (donneesFormulaire.nom === "" || donneesFormulaire.email === "") {
+        alert("Veuillez remplir tous les champs obligatoires.");
+        return;
+    }
 
-        if (!nomInput || !emailInput) {
-            alert("Erreur technique : Les champs 'nom' ou 'email' sont introuvables dans le HTML.");
-            return;
-        }
+    try {
+        // 3. Envoi de la requête à ton API Render
+        // (Remplace par l'URL exacte de ton API Render si ce n'est pas celle-ci)
+        const response = await fetch('https://ong-sama-2.onrender.com/inscription', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(donneesFormulaire)
+        });
 
-        // Préparation des données au format JSON attendu par ton API FastAPI
-        const developpeurData = {
-            nom: nomInput.value.trim(),
-            email: emailInput.value.trim()
-        };
-
-        // Petite validation de sécurité avant l'envoi
-        if (developpeurData.nom === "" || developpeurData.email === "") {
-            alert("Veuillez remplir tous les champs obligatoires.");
-            return;
-        }
-
-        try {
-            // 4. Envoi des données vers ton API officielle sur Render 🚀
-            const response = await fetch('https://ong-sama-2.onrender.com/inscription', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(developpeurData)
-            });
-
-            // 5. Analyse de la réponse du serveur Cloud
-            if (response.ok) {
-                const resultat = await response.json();
-                alert('🎉 Inscription réussie ! Un e-mail de confirmation a été envoyé avec succès.');
-                formInscription.reset(); // Vide le formulaire après le succès
+        // 4. Analyse de la réponse du serveur
+        if (response.ok) {
+            alert('🎉 Inscription réussie ! Un e-mail de confirmation a été envoyé avec succès.');
+            document.getElementById('formInscription').reset(); // Vide le formulaire
+        } else {
+            // Si le code est 422, on tente de lire le détail de l'erreur renvoyé par FastAPI/Python
+            const erreurResultat = await response.json().catch(() => ({}));
+            console.error("Détails de l'erreur API :", erreurResultat);
+            
+            // On affiche le code d'erreur et le détail s'il existe
+            let messageErreur = `❌ Échec de l'inscription (Code ${response.status}).`;
+            if (erreurResultat.detail) {
+                // Si c'est une erreur de validation de FastAPI, le détail est souvent un tableau
+                messageErreur += "\nMotif : " + (typeof erreurResultat.detail === 'object' ? JSON.stringify(erreurResultat.detail) : erreurResultat.detail);
             } else {
-                const erreurResultat = await response.json().catch(() => ({}));
-                console.error("Détails de l'erreur API :", erreurResultat);
-                alert(`❌ Échec de l'inscription (Code ${response.status}). Veuillez vérifier les informations.`);
+                messageErreur += "\nVeuillez vérifier les informations saisies.";
             }
-
-        } catch (error) {
-            // Gestion des erreurs si le réseau plante ou si Render dort
-            console.error('Erreur réseau ou serveur inaccessible :', error);
-            alert('Le serveur de l\'ONG est injoignable pour le moment. Veuillez réessayer dans quelques instants.');
+            
+            alert(messageErreur);
         }
-    });
+
+    } catch (error) {
+        console.error('Erreur réseau ou connexion impossible :', error);
+        alert('❌ Impossible de contacter le serveur. Vérifie ta connexion internet ou l\'état de ton service Render.');
+    }
 });
+
 
 </script>
