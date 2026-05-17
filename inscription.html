@@ -1,0 +1,60 @@
+<head>
+  <meta charset="UTF-8">
+  <style>
+      body{
+  background-color: white;
+}
+.section { padding: 30px 20px; max-width: 800px; margin: auto;
+background-image: url('image.png');
+background-size: cover;
+background-position: center;
+}
+input { padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;}
+button { background: #2e7d32; color: white; padding: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+form { display: flex; flex-direction: column; gap: 15px; background: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #ddd; }
+footer{
+  text-align: center;
+  background-color: orange;
+  border-radius: 12px solid black;
+}
+div h2{
+  background-color: orange ;
+  text-align: center;
+  border: 2px solid black;
+}
+#lien{
+  text-align: center;
+  text-decoration: none;
+}
+  </style>
+</head>
+<div class="section">
+    <h2>Devenir Membre</h2>
+    <form id="ongForm">
+        <input type="text" id="nom" placeholder="Votre Nom complet" required>
+        <input type="email" id="email" placeholder="Votre adresse Email" required>
+        <button type="submit" action="index(2).html">S'inscrire maintenant</button>
+        <a href="index (2).html" id="lien">je suis déjà membre</a>
+    </form>
+    <p id="reponse" style="text-align: center; font-weight: bold; color: #2e7d32;"></p>
+</div>
+
+<footer>&copy; 2026 Projet ONG Solidaire - Tous droits réservés</footer>
+<script>
+// Exemple de ce que ton JavaScript doit envoyer
+const donneesFormulaire = {
+    nom: document.getElementById("nom").value,
+    email: document.getElementById("email").value,
+    telephone: document.getElementById("telephone").value // Vérifie que l'id correspond bien !
+};
+
+fetch("http://localhost:8000/inscription", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(donneesFormulaire)
+})
+.then(response => response.json())
+.then(data => alert(data.message));
+</script>
