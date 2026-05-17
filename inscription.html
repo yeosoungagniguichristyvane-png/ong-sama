@@ -65,6 +65,8 @@ div h2{
     <form id="formInscription">
         <input type="text" id="nom" placeholder="Votre Nom complet" required>
         <input type="email" id="email" placeholder="Votre adresse Email" required>
+        <input type="tel" id="telephone" required placeholder="Votre numéro de téléphone">
+
         <button type="submit" action="index(2).html">S'inscrire maintenant</button>
         <a href="index.html" id="lien">je suis déjà membre</a>
     </form>
@@ -73,35 +75,33 @@ div h2{
 
 <footer>&copy; 2026 Projet ONG Solidaire - Tous droits réservés</footer>
 <script>
-// On écoute la soumission du formulaire
 document.getElementById('formInscription').addEventListener('submit', async function(event) {
-    event.preventDefault(); // Empêche le rechargement de la page
+    event.preventDefault();
 
     // 1. Récupération des valeurs des champs HTML
-    // (Vérifie bien que tes balises <input> ont les id="nom" et id="email")
     const champNom = document.getElementById('nom');
     const champEmail = document.getElementById('email');
+    const champTelephone = document.getElementById('telephone'); // On ajoute le téléphone ici
 
-    if (!champNom || !champEmail) {
-        alert("Erreur technique : Les champs 'nom' ou 'email' sont introuvables dans le HTML.");
+    if (!champNom || !champEmail || !champTelephone) {
+        alert("Erreur technique : L'un des champs (nom, email ou telephone) est introuvable dans le HTML.");
         return;
     }
 
-    // 2. Préparation des données dans l'objet attendu par le Python (main.py)
+    // 2. Préparation des données complètes pour Python
     const donneesFormulaire = {
         nom: champNom.value.trim(),
-        email: champEmail.value.trim()
+        email: champEmail.value.trim(),
+        telephone: champTelephone.value.trim() // On envoie le téléphone attendu par l'API
     };
 
-    // Vérification locale rapide avant d'envoyer
-    if (donneesFormulaire.nom === "" || donneesFormulaire.email === "") {
+    if (donneesFormulaire.nom === "" || donneesFormulaire.email === "" || donneesFormulaire.telephone === "") {
         alert("Veuillez remplir tous les champs obligatoires.");
         return;
     }
 
     try {
         // 3. Envoi de la requête à ton API Render
-        // (Remplace par l'URL exacte de ton API Render si ce n'est pas celle-ci)
         const response = await fetch('https://ong-sama-2.onrender.com/inscription', {
             method: 'POST',
             headers: {
@@ -113,29 +113,24 @@ document.getElementById('formInscription').addEventListener('submit', async func
         // 4. Analyse de la réponse du serveur
         if (response.ok) {
             alert('🎉 Inscription réussie ! Un e-mail de confirmation a été envoyé avec succès.');
-            document.getElementById('formInscription').reset(); // Vide le formulaire
+            document.getElementById('formInscription').reset(); 
         } else {
-            // Si le code est 422, on tente de lire le détail de l'erreur renvoyé par FastAPI/Python
             const erreurResultat = await response.json().catch(() => ({}));
             console.error("Détails de l'erreur API :", erreurResultat);
             
-            // On affiche le code d'erreur et le détail s'il existe
             let messageErreur = `❌ Échec de l'inscription (Code ${response.status}).`;
             if (erreurResultat.detail) {
-                // Si c'est une erreur de validation de FastAPI, le détail est souvent un tableau
                 messageErreur += "\nMotif : " + (typeof erreurResultat.detail === 'object' ? JSON.stringify(erreurResultat.detail) : erreurResultat.detail);
             } else {
                 messageErreur += "\nVeuillez vérifier les informations saisies.";
             }
-            
             alert(messageErreur);
         }
 
     } catch (error) {
-        console.error('Erreur réseau ou connexion impossible :', error);
-        alert('❌ Impossible de contacter le serveur. Vérifie ta connexion internet ou l\'état de ton service Render.');
+        console.error('Erreur réseau :', error);
+        alert('❌ Impossible de contacter le serveur.');
     }
 });
-
 
 </script>
