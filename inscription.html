@@ -78,58 +78,45 @@ div h2{
 document.getElementById('formInscription').addEventListener('submit', async function(event) {
     event.preventDefault();
 
-    // 1. Récupération des valeurs des champs HTML
+    // 1. On récupère proprement les 3 champs requis pour éviter l'erreur 422
     const champNom = document.getElementById('nom');
     const champEmail = document.getElementById('email');
-    const champTelephone = document.getElementById('telephone'); // On ajoute le téléphone ici
+    const champTelephone = document.getElementById('telephone');
 
-    if (!champNom || !champEmail || !champTelephone) {
-        alert("Erreur technique : L'un des champs (nom, email ou telephone) est introuvable dans le HTML.");
-        return;
-    }
-
-    // 2. Préparation des données complètes pour Python
     const donneesFormulaire = {
         nom: champNom.value.trim(),
         email: champEmail.value.trim(),
-        telephone: champTelephone.value.trim() // On envoie le téléphone attendu par l'API
+        telephone: champTelephone.value.trim()
     };
 
-    if (donneesFormulaire.nom === "" || donneesFormulaire.email === "" || donneesFormulaire.telephone === "") {
-        alert("Veuillez remplir tous les champs obligatoires.");
-        return;
-    }
-
     try {
-        // 3. Envoi de la requête à ton API Render
+        // 2. Envoi des informations à ton API Render pour l'enregistrement
         const response = await fetch('https://ong-sama-2.onrender.com/inscription', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(donneesFormulaire)
         });
 
-        // 4. Analyse de la réponse du serveur
         if (response.ok) {
-            alert('🎉 Inscription réussie ! Un e-mail de confirmation a été envoyé avec succès.');
-            document.getElementById('formInscription').reset(); 
+            alert('🎉 Inscription enregistrée avec succès !');
+
+            // 3. LA MAGIE DU SMS ICI : On prépare le SMS automatique
+            // (Tu peux remplacer le numéro ci-dessous par le numéro officiel de l'ONG)
+            const numeroONG = "+2250769492122"; 
+            const texteSMS = `Bonjour ${donneesFormulaire.nom}, votre inscription à l'ONG SAMA a bien été validée avec le numéro : ${donneesFormulaire.telephone}. Merci de nous rejoindre !`;
+
+            // 4. On détecte si l'utilisateur est sur iPhone ou Android pour ouvrir l'application SMS
+            const separation = (navigator.userAgent.match(/iPhone|iPad|iPod/i)) ? '&' : '?';
+            window.location.href = `sms:${numeroONG}${separation}body=${encodeURIComponent(texteSMS)}`;
+
+            document.getElementById('formInscription').reset(); // On vide le formulaire
         } else {
-            const erreurResultat = await response.json().catch(() => ({}));
-            console.error("Détails de l'erreur API :", erreurResultat);
-            
-            let messageErreur = `❌ Échec de l'inscription (Code ${response.status}).`;
-            if (erreurResultat.detail) {
-                messageErreur += "\nMotif : " + (typeof erreurResultat.detail === 'object' ? JSON.stringify(erreurResultat.detail) : erreurResultat.detail);
-            } else {
-                messageErreur += "\nVeuillez vérifier les informations saisies.";
-            }
-            alert(messageErreur);
+            alert('❌ Échec de l\'envoi. Assure-toi d\'avoir bien rempli le Nom, l\'Email et le Téléphone.');
         }
 
     } catch (error) {
-        console.error('Erreur réseau :', error);
-        alert('❌ Impossible de contacter le serveur.');
+        console.error('Erreur :', error);
+        alert('❌ Impossible de joindre le serveur.');
     }
 });
 
