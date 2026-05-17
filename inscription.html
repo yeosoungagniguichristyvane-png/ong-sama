@@ -124,6 +124,28 @@
             alert("🌐 Impossible de joindre le serveur. Vérifie que ton serveur Replit est bien actif.");
         }
     });
+    // Envoi des données vers ton tout nouveau serveur Render
+fetch("https://ong-sama.onrender.com/inscription", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        nom: nomFormulaire,       // Assure-toi que ces variables correspondent
+        email: emailFormulaire,   // à la récupération de tes champs de saisie
+        telephone: telFormulaire
+    })
+})
+.then(response => response.json())
+.then(data => {
+    if(data.status === "success") {
+        alert("Inscription validée avec succès sur le serveur indépendant !");
+    } else {
+        alert("Erreur lors de l'inscription.");
+    }
+})
+.catch(error => console.error("Erreur de connexion:", error));
+
 </script>
 
 </body>
