@@ -1,113 +1,116 @@
-import os
 import sqlite3
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-# 1. Initialisation de l'application FastAPI
-app = FastAPI(title="API-ONG-SAMA")
-
-# 2. Configuration du CORS pour que ton site HTML puisse communiquer avec l'API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Permet les requêtes depuis n'allant de n'importe où (GitHub Pages ou local)
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="API ONG SAMA",
+    description="Serveur hautement sécurisé et optimisé pour la gestion des membres.",
+    version="1.1.0"
 )
 
-# 3. Modèle de données pour valider les informations reçues du formulaire HTML
+# 🔐 SÉCURITÉ CORS : Remplace par l'adresse exacte de ton site GitHub Pages
+# Exemple : ["https://christyvane.github.io", "http://localhost:5500"]
+ORIGINES_AUTORISEES = ["*"] 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINES_AUTORISEES,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],  # On n'autorise que le strict nécessaire
+    allow_headers=["Content-Type"],
+)
+
+DB_NAME = "ong_data.db"
+
+# 📐 Modèle de données strict et sécurisé
 class MembreInscription(BaseModel):
-    nom: str
-    email: EmailStr
-    telephone: str
+    nom: str = Field(..., min_length=2, max_length=100, description="Nom et prénoms complets")
+    email: EmailStr = description="Adresse e-mail valide"
+    telephone: str = Field(..., min_length=8, max_length=20, description="Numéro de téléphone avec indicatif")
 
-# 4. Initialisation automatique de la base de données SQLite au démarrage
-def initialiser_db():
-    conn = sqlite3.connect("ong_data.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS membres (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            telephone TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-initialiser_db()
-
-# 5. Fonction pour envoyer le mail de bienvenue via Gmail
-def envoyer_mail_bienvenue(nom_destinataire: str, email_destinataire: str):
-    email_ong = "ong.sama.sanpedro@gmail.com"
-    
-    # Sécurité : Render récupérera le mot de passe dans ses variables d'environnement
-    mot_de_passe_ong = os.getenv("GMAIL_PASSWORD")
-
-    # Si le mot de passe n'est pas encore configuré sur Render, on évite de faire crash le serveur
-    if not mot_de_passe_ong:
-        print("Erreur : La variable d'environnement GMAIL_PASSWORD n'est pas définie.")
-        return
-
-    # Construction du message email
-    message = MIMEMultipart()
-    message["From"] = email_ong
-    message["To"] = email_destinataire
-    message["Subject"] = "Félicitations et Bienvenue chez ONG-SAMA ! 🎉"
-
-    corps_texte = f"""Bonjour {nom_destinataire},
-
-Toute l'équipe de l'ONG-SAMA est heureuse de vous compter parmi ses nouveaux membres !
-
-Votre inscription a été validée avec succès. Ensemble, nous allons mener des actions fortes pour la solidarité et le développement.
-
-Nous vous contacterons très bientôt sur votre numéro de téléphone pour les prochaines étapes et réunions.
-
-Cordialement,
-Le secrétariat de l'ONG-SAMA
-San Pedro, Côte d'Ivoire
-"""
-    message.attach(MIMEText(corps_texte, "plain", "utf-8"))
-
-    try:
-        # Connexion sécurisée au serveur SMTP de Gmail
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as serveur:
-            serveur.login(email_ong, mot_de_passe_ong)
-            serveur.send_message(message)
-        print(f"Mail de bienvenue envoyé avec succès à {email_destinataire}")
-    except Exception as e:
-        # Si l'envoi d'email échoue, on l'affiche dans les logs sans bloquer l'inscription
-        print(f"Erreur lors de l'envoi de l'email : {e}")
-
-# 6. Route POST pour recevoir les inscriptions du formulaire
-@app.post("/inscription")
-def inscription(membre: MembreInscription):
-    try:
-        conn = sqlite3.connect("ong_data.db")
-        cursor = conn.cursor()
-        
-        # Insertion du nouveau membre dans la base SQLite
-        cursor.execute(
-            "INSERT INTO membres (nom, email, telephone) VALUES (?, ?, ?)",
-            (membre.nom, membre.email, membre.telephone)
-        )
-        conn.commit()
-        conn.close()
-        
-        # Déclenchement de l'envoi du mail de bienvenue
-        envoyer_mail_bienvenue(membre.nom, membre.email)
-        
+    # Nettoyage automatique des données reçues
+    def nettoyer_donnees(self):
         return {
-            "statut": "success", 
-            "message": f"Félicitations {membre.nom}, votre inscription a été enregistrée avec succès !"
+            "nom": self.nom.strip().title(),
+            "email": self.email.strip().lower(),
+            "telephone": self.telephone.strip().replace(" ", "")
         }
+
+# 🛠️ Initialisation robuste de la base de données
+def initialiser_bdd():
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS membres (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nom TEXT NOT NULL,
+                email TEXT NOT NULL,
+                telephone TEXT NOT NULL,
+                date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+initialiser_bdd()
+
+@app.get("/", status_code=status.HTTP_200_OK)
+def page_accueil():
+    return {"status": "online", "message": "Serveur ONG SAMA sécurisé et opérationnel."}
+
+# 📥 1. Route POST d'inscription blindée
+@app.post("/inscription", status_code=status.HTTP_201_CREATED)
+def inscription(membre: MembreInscription):
+    donnees = membre.nettoyer_donnees()
     
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=400, detail="Cette adresse email est déjà enregistrée.")
+    try:
+        # Le 'with' sécurise la connexion et gère les fermetures proprement
+        with sqlite3.connect(DB_NAME) as conn:
+            cursor = conn.cursor()
+            
+            # Vérification si l'e-mail existe déjà pour éviter les doublons
+            cursor.execute("SELECT id FROM membres WHERE email = ?", (donnees["email"],))
+            if cursor.fetchone():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cette adresse e-mail est déjà inscrite."
+                )
+                
+            # Insertion sécurisée
+            cursor.execute(
+                "INSERT INTO membres (nom, email, telephone) VALUES (?, ?, ?)",
+                (donnees["nom"], donnees["email"], donnees["telephone"])
+            )
+            conn.commit()
+            
+        return {"status": "success", "message": "Inscription validée avec succès !"}
+        
+    except HTTPException as http_err:
+        raise http_err
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne du serveur : {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de l'enregistrement en base de données : {str(e)}"
+        )
+
+# 📤 2. Route GET de récupération optimisée pour l'espace Admin
+@app.get("/membres", status_code=status.HTTP_200_OK)
+def obtenir_les_membres():
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            cursor = conn.cursor()
+            # On trie par date pour voir les plus récents en premier
+            cursor.execute("SELECT nom, email, telephone FROM membres ORDER BY date_inscription DESC")
+            lignes = cursor.fetchall()
+        
+        # Construction propre de la réponse JSON
+        return [
+            {"nom": ligne[0], "email": ligne[1], "telephone": ligne[2]}
+            for ligne in lignes
+        ]
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la récupération des données : {str(e)}"
+        )
