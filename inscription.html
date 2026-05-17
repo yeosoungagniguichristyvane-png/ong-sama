@@ -28,6 +28,36 @@ div h2{
   text-align: center;
   text-decoration: none;
 }
+/* --- STYLE POUR SMARTPHONE & TABLETTE (Écrans de moins de 768px) --- */
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 16px; /* Ajuste la taille du texte pour les petits écrans */
+        padding: 10px;
+    }
+
+    /* Force le formulaire à prendre presque toute la largeur sur mobile */
+    form {
+        width: 95% !important; 
+        max-width: none !important;
+        margin: 10px auto !important;
+        box-sizing: border-box;
+    }
+
+    /* Aligne les cases de saisie et le bouton verticalement (les uns sous les autres) */
+    input, select, textarea, button {
+        width: 100% !important; 
+        display: block !important;
+        margin-bottom: 15px !important;
+        box-sizing: border-box;
+        font-size: 16px !important; /* Évite le zoom automatique forcé par iOS/Android */
+    }
+
+    /* Si tu as des éléments qui étaient côte à côte (flexbox), on les passe en colonne */
+    .flex-container, .row {
+        flex-direction: column !important;
+    }
+}
+
   </style>
 </head>
 <div class="section">
