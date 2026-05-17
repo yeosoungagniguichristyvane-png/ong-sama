@@ -78,7 +78,7 @@ div h2{
 document.getElementById('formInscription').addEventListener('submit', async function(event) {
   event.preventDefault();
 
-  // 1. On récupère proprement les 3 champs requis pour éviter l'erreur 422
+  // 1. Récupération des données du formulaire
   const champNom = document.getElementById('nom');
   const champEmail = document.getElementById('email');
   const champTelephone = document.getElementById('telephone');
@@ -90,7 +90,7 @@ document.getElementById('formInscription').addEventListener('submit', async func
   };
 
   try {
-    // 2. Envoi des informations à ton API Render pour l'enregistrement
+    // 2. Envoi vers ton API Render
     const response = await fetch('https://ong-sama-2.onrender.com/inscription', {
       method: 'POST',
       headers: {
@@ -99,34 +99,31 @@ document.getElementById('formInscription').addEventListener('submit', async func
       body: JSON.stringify(donneesFormulaire)
     });
 
+    // 3. Gestion stricte de la réponse
     if (response.ok) {
       alert('🎉 Inscription enregistrée avec succès !');
 
-      // 3. LA MAGIE DU SMS ICI : On prépare le message officiel
+      // Préparation et déclenchement du SMS automatique
       const numeroONG = "+225076942122";
       const texteSMS = `Bonjour ${donneesFormulaire.nom}, votre inscription à l'ONG SAMA a bien été validée avec le numéro : ${donneesFormulaire.telephone}. Merci de nous rejoindre !`;
 
-      // 4. On détecte si l'utilisateur est sur iPhone ou Android pour l'application SMS
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const separation = isIOS ? '&' : '?';
       
-      // Ouverture instantanée de l'application SMS de l'utilisateur
       window.location.href = `sms:${numeroONG}${separation}body=${encodeURIComponent(texteSMS)}`;
 
-      // On vide proprement les cases du formulaire après le succès
+      // On vide le formulaire uniquement ici
       document.getElementById('formInscription').reset();
-      
+
     } else {
-      // Si Render répond mais qu'il y a un problème avec les données (Ex: Email invalide)
+      // Ce message ne s'affichera QUE si le serveur renvoie une erreur (ex: email invalide)
       alert('❌ Échec de l\'envoi. Assure-toi d\'avoir bien rempli le Nom, l\'Email et le Téléphone.');
     }
 
   } catch (error) {
-    // Si le serveur Render est éteint ou inaccessible
-    console.error('Erreur :', error);
+    console.error('Erreur réseau :', error);
     alert('❌ Impossible de joindre le serveur. Réessaye dans quelques instants.');
   }
 });
-
 
 </script>
