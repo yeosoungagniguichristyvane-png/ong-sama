@@ -14,6 +14,8 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
             background-color: #1e1e1e;
@@ -28,6 +30,7 @@
             text-align: center;
             margin-bottom: 24px;
             color: #4caf50;
+            font-size: 24px;
         }
         .form-group {
             margin-bottom: 18px;
@@ -47,6 +50,7 @@
             color: #ffffff;
             font-size: 16px;
             box-sizing: border-box;
+            transition: border-color 0.3s;
         }
         input:focus {
             border-color: #4caf50;
@@ -54,7 +58,7 @@
         }
         button {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background-color: #2e7d32;
             color: white;
             border: none;
@@ -95,12 +99,12 @@
         document.getElementById('inscriptionForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Récupération des valeurs saisies dans le formulaire
-            const nomValeur = document.getElementById('nom').value;
-            const emailValeur = document.getElementById('email').value;
-            const telephoneValeur = document.getElementById('telephone').value;
+            // Récupération des données du formulaire
+            const nomValeur = document.getElementById('nom').value.trim();
+            const emailValeur = document.getElementById('email').value.trim();
+            const telephoneValeur = document.getElementById('telephone').value.trim();
 
-            // Connexion directe avec ton API hébergée sur Render
+            // Envoi direct vers ton API Render (plus besoin de Replit !)
             fetch("https://ong-sama.onrender.com/inscription", {
                 method: "POST",
                 headers: {
@@ -114,21 +118,21 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("Erreur de réponse du serveur");
+                    throw new Error("Le serveur a renvoyé une erreur");
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.status === "success") {
-                    alert("🎉 Inscription réussie avec succès sur le serveur Render !");
-                    document.getElementById('inscriptionForm').reset(); // Vide le formulaire
+                    alert("🎉 Inscription validée avec succès sur ton serveur indépendant !");
+                    document.getElementById('inscriptionForm').reset(); // Vide les champs
                 } else {
-                    alert("❌ Échec de l'inscription. Le serveur a renvoyé une erreur.");
+                    alert("❌ Échec de l'inscription. Vérifie les informations envoyées.");
                 }
             })
             .catch(error => {
-                console.error("Erreur détectée :", error);
-                alert("🌐 Impossible de joindre le serveur. Assure-toi que ton service Render est bien actif et que tu as internet.");
+                console.error("Erreur constatée :", error);
+                alert("🌐 Impossible de joindre le serveur. Assure-toi que ton API Render est bien active et connectée à internet.");
             });
         });
     </script>
